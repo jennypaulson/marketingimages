@@ -1,20 +1,40 @@
-// Renders IndusTrack static post graphics (1080x1080 PNG) from the review page's graphic spec.
-// Spec extras (v2): accent: ["WORD", ...] colors those headline words orange; photo: <https URL, e.g. raw.githubusercontent.com/jennypaulson/marketingimages/main/library/...> draws a full-bleed photo with a dark gradient and puts the text at the bottom (photoFocusX/photoFocusY 0..1, overlay 0..1).
+// Renders IndusTrack social graphics from the review page's graphic spec.
 // Usage: node tools/render.js specs.json out_dir
-//   specs.json = [{"id":"2026-10-05-mon","graphic":{...}}, ...]  -> out_dir/<id>.png
-const fs=require('fs'), path=require('path');
-const {chromium}=require('playwright');
+//   specs.json = [{"id":"2026-10-05-mon","graphic":{...}}, ...]
+//   -> out_dir/<id>.png (1080x1080) and, for the brand styles, out_dir/<id>-story.png (1080x1920)
+// Styles: graphic.style "statement" (blue, quote marks, big left-aligned headline) or "stat" (black,
+// huge number/word, orange underline, bullets). No style = the older centered ALL-CAPS layout.
+// Shared spec fields: headline [lines], accent [words in orange], pill, question (comment box),
+// supportLine, muted, checklist, photo (https URL; raw.githubusercontent.com/jennypaulson/marketingimages/main/library/...),
+// photoFocusX/photoFocusY (0..1), overlay (0..1), footer.
+// The drawing code lives in tools/draw.js (the review page uses the same code). Fonts: Poppins (OFL) in tools/fonts.
+const fs = require('fs'), path = require('path');
+const {chromium} = require('playwright');
 const [,, specFile, outDir] = process.argv;
-const specs = JSON.parse(fs.readFileSync(specFile,'utf8'));
-const DRAW = "const FONT = '\"Helvetica Neue\", Helvetica, Arial, sans-serif';\n/* ---------- graphic renderer (1080x1080) v2: accent words + photo layout ---------- */\nconst PHOTOS = {};\nfunction loadPhoto(url){\n  if (!PHOTOS[url]) PHOTOS[url] = new Promise(res=>{ const im = new Image(); im.crossOrigin = \"anonymous\"; im.onload = ()=>res(im); im.onerror = ()=>res(null); im.src = url; });\n  return PHOTOS[url];\n}\nfunction fitSize(ctx, lines, weight, max, maxW){ let s = max; while (s > 20){ ctx.font = `${weight} ${s}px ${FONT}`; if (lines.every(l => ctx.measureText(l).width <= maxW)) break; s -= 2; } return s; }\nfunction roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }\nfunction drawGraphic(canvas, g, photoImg){\n  const W = 1080, ctx = canvas.getContext(\"2d\");\n  canvas.width = W; canvas.height = W;\n  const bg = g.bg || \"#0540a5\";\n  ctx.fillStyle = bg; ctx.fillRect(0,0,W,W);\n  let photo = photoImg || null;\n  if (g.photo && !photo){\n    loadPhoto(g.photo).then(im=>{ if (im && canvas.isConnected !== false) drawGraphic(canvas, g, im); });\n  }\n  if (photo){\n    const s = Math.max(W/photo.width, W/photo.height), pw = photo.width*s, ph = photo.height*s;\n    const fx = g.photoFocusX ?? 0.5, fy = g.photoFocusY ?? 0.4;\n    ctx.drawImage(photo, (W-pw)*fx, (W-ph)*fy, pw, ph);\n    const dark = g.overlay ?? 0.55, gr = ctx.createLinearGradient(0,0,0,W);\n    gr.addColorStop(0, `rgba(0,0,0,${Math.max(0,dark-0.35)})`); gr.addColorStop(0.45, `rgba(0,0,0,${dark-0.1})`); gr.addColorStop(1, `rgba(0,0,0,${Math.min(0.92,dark+0.3)})`);\n    ctx.fillStyle = gr; ctx.fillRect(0,0,W,W);\n  } else if (bg.toLowerCase() === \"#0540a5\"){ const gr = ctx.createLinearGradient(0,0,W,W); gr.addColorStop(0,\"rgba(255,255,255,0.05)\"); gr.addColorStop(1,\"rgba(0,0,0,0.12)\"); ctx.fillStyle = gr; ctx.fillRect(0,0,W,W); }\n  const maxW = 900, blocks = [];\n  const accent = new Set((g.accent||[]).map(w=>String(w).toUpperCase().replace(/[^A-Z0-9+]/g,\"\")));\n  const isAcc = t => accent.has(t.toUpperCase().replace(/[^A-Z0-9+]/g,\"\"));\n  const drawLine = (l, y, color, acc) => {\n    if (!acc || !accent.size){ ctx.fillStyle = color; ctx.textAlign = \"center\"; ctx.fillText(l, W/2, y); return; }\n    const parts = l.split(/(\\s+)/), w = ctx.measureText(l).width; let x = (W-w)/2; ctx.textAlign = \"left\";\n    parts.forEach(p=>{ ctx.fillStyle = (p.trim() && isAcc(p)) ? \"#ff6600\" : color; ctx.fillText(p, x, y); x += ctx.measureText(p).width; });\n  };\n  if (g.pill){ ctx.font = `700 30px ${FONT}`; const tw = ctx.measureText(g.pill).width; blocks.push({h:70, gap:56, draw:y=>{ const pw = tw + 60, x = (W-pw)/2; ctx.fillStyle = \"#ff6600\"; roundRect(ctx,x,y,pw,70,35); ctx.fill(); ctx.fillStyle=\"#fff\"; ctx.font=`700 30px ${FONT}`; ctx.textAlign=\"center\"; ctx.textBaseline=\"middle\"; ctx.fillText(g.pill, W/2, y+36); }}); }\n  const textBlock = (lines, weight, max, gap, color=\"#fff\", acc=false) => { const s = fitSize(ctx, lines, weight, max, maxW), lh = Math.round(s*1.12); blocks.push({h: lh*lines.length, gap, draw:y=>{ ctx.font=`${weight} ${s}px ${FONT}`; ctx.textBaseline=\"top\"; lines.forEach((l,i)=>drawLine(l, y+i*lh, color, acc)); }}); };\n  if (g.headline) textBlock(g.headline, 700, g.headlineMax || 96, g.divider ? 40 : 48, \"#fff\", true);\n  if (g.divider) blocks.push({h:4, gap:40, draw:y=>{ ctx.fillStyle=\"#0092cb\"; ctx.fillRect(W/2-60,y,120,4); }});\n  if (g.headline2) textBlock(g.headline2, 700, g.headline2Max || 58, 48, \"#fff\", true);\n  if (g.checklist){ ctx.font = `400 42px ${FONT}`; const items = g.checklist.map(t=>\"\u2713  \"+t); const bw = Math.max(...items.map(t=>ctx.measureText(t).width)), lh = 62; blocks.push({h: lh*items.length, gap:52, draw:y=>{ ctx.fillStyle=\"#fff\"; ctx.font=`400 42px ${FONT}`; ctx.textAlign=\"left\"; ctx.textBaseline=\"top\"; items.forEach((t,i)=>ctx.fillText(t,(W-bw)/2,y+i*lh)); }}); }\n  if (g.supportLine) textBlock([g.supportLine], 400, 36, 52);\n  if (g.cta) textBlock([g.cta], 700, 40, 26);\n  if (g.footer){ const fs = g.footerSize || 32; blocks.push({h:fs+4, gap:0, draw:y=>{ ctx.fillStyle = g.footerColor || \"rgba(255,255,255,0.85)\"; ctx.font=`${fs>32?700:400} ${fs}px ${FONT}`; ctx.textAlign=\"center\"; ctx.textBaseline=\"top\"; ctx.fillText(g.footer, W/2, y); }}); }\n  if (!blocks.length) return;\n  blocks[blocks.length-1].gap = 0;\n  const total = blocks.reduce((a,b)=>a+b.h+b.gap,0);\n  let y = (photo) ? Math.max(70, W - 80 - total) : Math.max(70, (W-total)/2);\n  blocks.forEach(b=>{ b.draw(y); y += b.h + b.gap; });\n}\n";
-(async()=>{
+const specs = JSON.parse(fs.readFileSync(specFile, 'utf8'));
+const DRAW = "const FONT = '\"Helvetica Neue\", Helvetica, Arial, sans-serif';\n" + fs.readFileSync(path.join(__dirname, 'draw.js'), 'utf8');
+const fontCss = ['400','500','600','700','800'].map(w => {
+  const f = path.join(__dirname, 'fonts', `poppins-latin-${w}-normal.woff2`);
+  const src = fs.existsSync(f) ? f : path.join(__dirname, 'fonts', 'poppins-latin-600-normal.woff2');
+  return `@font-face{font-family:Poppins;font-weight:${w};src:url(data:font/woff2;base64,${fs.readFileSync(src).toString('base64')}) format('woff2');}`;
+}).join('');
+(async () => {
   const b = await chromium.launch(); const p = await b.newPage();
-  await p.setContent('<canvas id="c"></canvas><script>'+DRAW+'</script>');
-  fs.mkdirSync(outDir,{recursive:true});
-  for (const s of specs){
-    const url = await p.evaluate(async g=>{ const c=document.getElementById('c'); const im = g.photo ? await loadPhoto(g.photo) : null; if (g.photo && !im) throw new Error('photo did not load: '+g.photo); drawGraphic(c,g,im); return c.toDataURL('image/png'); }, s.graphic);
-    fs.writeFileSync(path.join(outDir, s.id+'.png'), Buffer.from(url.split(',')[1],'base64'));
-    console.log('rendered', s.id);
+  await p.setContent(`<style>${fontCss}</style><canvas id="c"></canvas><script>${DRAW}<\/script>`);
+  await p.evaluate(async () => { await Promise.all(['400','500','700','800'].map(w => document.fonts.load(`${w} 40px Poppins`))); });
+  fs.mkdirSync(outDir, {recursive: true});
+  for (const s of specs) {
+    const brand = s.graphic && (s.graphic.style === 'statement' || s.graphic.style === 'stat');
+    for (const fmt of brand ? ['square', 'story'] : ['square']) {
+      const url = await p.evaluate(async ([g, fmt]) => {
+        const c = document.getElementById('c'); const im = g.photo ? await loadPhoto(g.photo) : null;
+        if (g.photo && !im) throw new Error('photo did not load: ' + g.photo);
+        drawGraphic(c, g, im, fmt); return c.toDataURL('image/png');
+      }, [s.graphic, fmt]);
+      const name = s.id + (fmt === 'story' ? '-story' : '') + '.png';
+      fs.writeFileSync(path.join(outDir, name), Buffer.from(url.split(',')[1], 'base64'));
+      console.log('rendered', name);
+    }
   }
   await b.close();
 })();
