@@ -16,3 +16,8 @@ Shared by the user on 2026-10-01. Square (1080x1080) and story (1080x1920) versi
 - Fake dashboard with real customer names (CurbCo, Sabre Plumbing) and invented numbers: no fake UI, use real screenshots.
 - Em dashes in copy; "Inventory" listed as a free feature (not in the free-tier list); "4 things" headline with only 3 bullets.
 - Demo links on cold social graphics (cold posts use Start Free).
+
+## Second batch (20 to 27)
+- Keep: "Call us. Someone actually answers." (support, 15 years of real support); "Your customer history shouldn't live in someone's head." (quick tip); "3 weeks. How long invoices sit when techs use paper." (big-number pain hook); the question box under the headline that invites comments; the "QUICK TIP" series format.
+- Fix before reuse: "3 weeks" is not in the claim register, so phrase it as a question or scenario ("How long do invoices sit?") or get it approved; on-site invoicing and digital work orders are Pro, so say so; no em dashes.
+- Never reuse: "Free data migration included" and "Switching is easier than you think" paired with free migration (we don't migrate for free; say "our team walks you through the switch step by step").
