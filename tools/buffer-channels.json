@@ -2,10 +2,45 @@
   "organizationId": "6ab9241551ce65e1b3d690fe",
   "timezone": "America/New_York",
   "channels": {
-    "linkedin_company": {"id": "6ab924a2ea19ca0bde03f9ec", "caption": "linkedin", "time": "08:30"},
-    "facebook":         {"id": "6ab93685ea19ca0bde04c169", "caption": "facebook", "time": "08:30", "metadata": {"facebook": {"type": "post"}}},
-    "instagram":        {"id": "6ab924ecea19ca0bde03fd23", "caption": "instagram", "time": "08:30", "metadata": {"instagram": {"type": "post", "shouldShareToFeed": true}}},
-    "jenny_linkedin":   {"id": "6ab924a2ea19ca0bde03f9eb", "caption": "personal", "time": "12:30"}
+    "linkedin_company": {
+      "id": "6ab924a2ea19ca0bde03f9ec",
+      "caption": "linkedin",
+      "time": "08:30"
+    },
+    "facebook": {
+      "id": "6ab93685ea19ca0bde04c169",
+      "caption": "facebook",
+      "time": "08:30",
+      "metadata": {
+        "facebook": {
+          "type": "post"
+        }
+      }
+    },
+    "instagram": {
+      "id": "6ab924ecea19ca0bde03fd23",
+      "caption": "instagram",
+      "time": "08:30",
+      "metadata": {
+        "instagram": {
+          "type": "post",
+          "shouldShareToFeed": true
+        }
+      }
+    },
+    "jenny_linkedin": {
+      "id": "6ab924a2ea19ca0bde03f9eb",
+      "caption": "personal",
+      "time": "12:30"
+    }
   },
-  "imageUrlPattern": "https://raw.githubusercontent.com/jennypaulson/marketingimages/main/posts/<week>/<postId>.png"
+  "imageUrlPattern": "https://raw.githubusercontent.com/jennypaulson/marketingimages/main/posts/<week>/<postId>.png",
+  "videoChannels": {
+    "youtube": {
+      "id": "6abebac9ea19ca0bde486a63",
+      "name": "IndusTrack",
+      "note": "Video only (YouTube Shorts). Never send image posts here. Raz Bajwa's personal channel was removed on 2026-10-01; never post there."
+    }
+  },
+  "videoNote": "Reels/Shorts: the same vertical video goes to instagram (metadata type reel), facebook (type reel), linkedin_company, and videoChannels.youtube. Image posts use only 'channels'."
 }
