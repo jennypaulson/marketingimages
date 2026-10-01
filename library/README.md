@@ -1,6 +1,8 @@
 # IndusTrack image library
 
-Photos the content agent can use as backgrounds for social posts. This repo is public, so only add images you're happy to have public (they end up on social media anyway).
+Photos and product screens the content agent can use in social posts.
+
+Licensed stock photos are NOT here: they live in a private library (industrack-leads repo, media-library/stock) and are referenced as `photo: "private:stock/<file>"`, so only finished post images become public. This repo is public, so only add images you're happy to have public (they end up on social media anyway).
 
 ## Folders
 - `hvac/`: rooftop units, chillers, boilers, techs working on HVAC equipment

@@ -1,6 +1,7 @@
 /* ---------- graphic renderer (1080x1080) v2: accent words + photo layout ---------- */
 const PHOTOS = {};
 function loadPhoto(url){
+  if (String(url).startsWith('private:')) return Promise.resolve(null); // private stock: only the agent's render can show it
   if (!PHOTOS[url]) PHOTOS[url] = new Promise(res=>{ const im = new Image(); im.crossOrigin = "anonymous"; im.onload = ()=>res(im); im.onerror = ()=>res(null); im.src = url; });
   return PHOTOS[url];
 }

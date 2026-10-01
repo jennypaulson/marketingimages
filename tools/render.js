@@ -12,6 +12,18 @@ const fs = require('fs'), path = require('path');
 const {chromium} = require('playwright');
 const [,, specFile, outDir] = process.argv;
 const specs = JSON.parse(fs.readFileSync(specFile, 'utf8'));
+// Licensed stock photos live in a PRIVATE library (never public): graphic.photo = "private:stock/<file>".
+// They are read from PRIVATE_MEDIA (default /home/claude/industrack-leads/media-library) and embedded,
+// so only the finished post image is ever published.
+const PRIVATE_MEDIA = process.env.PRIVATE_MEDIA || '/home/claude/industrack-leads/media-library';
+for (const s of specs) {
+  const ph = s.graphic && s.graphic.photo;
+  if (ph && ph.startsWith('private:')) {
+    const fp = path.join(PRIVATE_MEDIA, ph.slice(8));
+    const mime = fp.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+    s.graphic = Object.assign({}, s.graphic, {photo: `data:${mime};base64,` + fs.readFileSync(fp).toString('base64')});
+  }
+}
 const DRAW = "const FONT = '\"Helvetica Neue\", Helvetica, Arial, sans-serif';\n" + fs.readFileSync(path.join(__dirname, 'draw.js'), 'utf8');
 const fontCss = ['400','500','600','700','800'].map(w => {
   const f = path.join(__dirname, 'fonts', `poppins-latin-${w}-normal.woff2`);
