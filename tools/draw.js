@@ -112,8 +112,10 @@ function drawBrand(canvas, g, photo, fmt){
   const y0 = story ? 105 : 60, PT = !!(g.pillTop && g.pill), topH = PT ? (story ? 120 : 92) : 0, LV = photo ? "dark" : "blue";
   // White top strip with the real (full color) logo on plain blue graphics (user, 2026-10-04). strip: false turns it off.
   const STRIP = !!(g.logo && PT && !photo && g.strip !== false), stripH = story ? 250 : 150, topEnd = STRIP ? stripH : y0 + topH;
-  if (STRIP){ ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, stripH); ctx.fillStyle = "#ff6600"; ctx.fillRect(0, stripH - 6, W, 6);
-    const lh = story ? 104 : 76; drawLogo(ctx, 80, (stripH - 6 - lh)/2, lh, "light", "left"); pillAt(ctx, g.pill, 1000, (stripH - 6 - 46*z)/2, 46*z, 22*z, "right"); }
+  // The strip is an inset white card with a blue border on all sides, so the graphic keeps a blue edge on white feeds (user, 2026-10-04).
+  if (STRIP){ const m = story ? 32 : 24; ctx.fillStyle = "#ffffff"; roundRect(ctx, m, m, W - 2*m, stripH - m, 18); ctx.fill();
+    ctx.fillStyle = "#ff6600"; ctx.save(); roundRect(ctx, m, m, W - 2*m, stripH - m, 18); ctx.clip(); ctx.fillRect(m, stripH - 6, W - 2*m, 6); ctx.restore();
+    const lh = story ? 100 : 70, cy = m + (stripH - m - 6)/2; drawLogo(ctx, 80, cy - lh/2, lh, "light", "left"); pillAt(ctx, g.pill, 1000, cy - 23*z, 46*z, 22*z, "right"); }
   else if (PT){ if (g.logo) drawLogo(ctx, 1000, y0, topH, LV, "right"); pillAt(ctx, g.pill, 80, y0 + (topH - 46*z)/2, 46*z, 22*z, "left"); }
   else { ctx.fillStyle = "#ff6600"; ctx.fillRect(80, y0, 78, 6); ctx.fillRect(80, y0, 6, 78); }
   const quote = (x, y, sz, color)=>{ ctx.fillStyle = color; [0, 1].forEach(i=>{ const bx = x + i*sz*0.95; ctx.beginPath(); ctx.moveTo(bx + sz*0.45, y); ctx.lineTo(bx + sz*0.95, y); ctx.lineTo(bx + sz*0.5, y + sz*1.05); ctx.lineTo(bx, y + sz*1.05); ctx.closePath(); ctx.fill(); }); };
