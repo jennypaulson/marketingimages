@@ -7,6 +7,8 @@
 // Shared spec fields: headline [lines], accent [words in orange], pill, question (comment box),
 // supportLine, muted, checklist, photo (https URL; raw.githubusercontent.com/jennypaulson/marketingimages/main/library/...),
 // photoFocusX/photoFocusY (0..1), overlay (0..1), footer.
+// logo: true draws the real IndusTrack logo (mark + wordmark) instead of the plain wordmark; pillTop: true puts the
+// statement style's pill at the top left (with the logo top right). Both are the default from 2026-10-04 (user feedback).
 // The drawing code lives in tools/draw.js (the review page uses the same code). Fonts: Poppins (OFL) in tools/fonts.
 const fs = require('fs'), path = require('path');
 const {chromium} = require('playwright');

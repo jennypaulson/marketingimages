@@ -58,6 +58,18 @@ function fitWrapped(ctx, items, weight, max, min, maxW, maxLines){ let s = max, 
 function texture(ctx, W, H, alpha){ ctx.save(); ctx.strokeStyle = `rgba(255,255,255,${alpha})`; ctx.lineWidth = 1.2; ctx.beginPath(); for (let x = -H; x < W; x += 30){ ctx.moveTo(x,0); ctx.lineTo(x+H,H); } ctx.stroke(); ctx.restore(); }
 function pillAt(ctx, text, x, y, h, fs, align){ ctx.font = `700 ${fs}px ${BFONT}`; const w = ctx.measureText(text).width + fs*1.6; const px = align==="right" ? x - w : x;
   ctx.fillStyle = "#ff6600"; roundRect(ctx, px, y, w, h, h/2); ctx.fill(); ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(text, px + w/2, y + h/2 + 1); return w; }
+// Real IndusTrack logo (geometry of the website's IndusTrack-Logo-1.svg, 320x72): mark + wordmark + descriptor.
+// variant "blue" (on #0540a5: white tile, blue bars) or "dark" (on black/photo: blue tile, white bars). Returns its width.
+function drawLogo(ctx, x, y, h, variant, align){ const k = h/72, LF0 = '"Helvetica Neue", Helvetica, Arial, sans-serif'; ctx.save();
+  try { ctx.letterSpacing = (-0.8*k)+"px"; } catch(e){} ctx.font = `700 ${24*k}px ${LF0}`; const w1 = 88*k + ctx.measureText("IndusTrack").width;
+  try { ctx.letterSpacing = (3.5*k)+"px"; } catch(e){} ctx.font = `400 ${9*k}px ${LF0}`; const w2 = 90*k + ctx.measureText("FIELD SERVICE SOFTWARE").width - 3.5*k;
+  const w = Math.max(w1, w2), x0 = align==="right" ? x - w : x;
+  ctx.fillStyle = variant==="blue" ? "#ffffff" : "#0540a5"; roundRect(ctx, x0, y, 72*k, 72*k, 14*k); ctx.fill();
+  const bar = variant==="blue" ? "#0540a5" : "#ffffff"; [[16,40,bar],[31,27,bar],[46,14,"#ff6600"]].forEach(([by,bw,c])=>{ ctx.fillStyle = c; roundRect(ctx, x0+12*k, y+by*k, bw*k, 9*k, 4.5*k); ctx.fill(); });
+  const LF = '"Helvetica Neue", Helvetica, Arial, sans-serif'; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  try { ctx.letterSpacing = (-0.8*k)+"px"; } catch(e){} ctx.font = `700 ${24*k}px ${LF}`; ctx.fillStyle = "#ffffff"; ctx.fillText("IndusTrack", x0+88*k, y+36*k);
+  try { ctx.letterSpacing = (3.5*k)+"px"; } catch(e){} ctx.font = `400 ${9*k}px ${LF}`; ctx.fillStyle = variant==="blue" ? "#a9bdf5" : "rgba(255,255,255,0.85)"; ctx.fillText("FIELD SERVICE SOFTWARE", x0+90*k, y+53*k);
+  try { ctx.letterSpacing = "0px"; } catch(e){} ctx.restore(); return w; }
 function accentWords(g){ return new Set((g.accent||[]).map(w=>String(w).toUpperCase().replace(/[^A-Z0-9+$]/g,""))); }
 function drawWordsLeft(ctx, line, x, y, color, acc){ const parts = line.split(/(\s+)/); ctx.textAlign = "left"; parts.forEach(p=>{ ctx.fillStyle = (p.trim() && acc.has(p.toUpperCase().replace(/[^A-Z0-9+$]/g,""))) ? "#ff6600" : color; ctx.fillText(p, x, y); x += ctx.measureText(p).width; }); }
 function drawWordsCenter(ctx, line, cx, y, color, acc){ const w = ctx.measureText(line).width; drawWordsLeft(ctx, line, cx - w/2, y, color, acc); }
@@ -83,8 +95,10 @@ function drawBrand(canvas, g, photo, fmt){
     if (g.muted){ items.push({h: 32*z, gap: 40*k, draw:y=>{ ctx.font = `400 ${Math.round(26*z)}px ${BFONT}`; ctx.fillStyle = "#6b6b6b"; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(g.muted, W/2, y); }}); }
     if (g.checklist){ const sp = story ? 150 : 52; items.push({h: sp*(g.checklist.length-1) + 30, gap: 40*k, draw:y=>{ g.checklist.forEach((t,i)=>{ const yy = y + i*sp; ctx.fillStyle = "#ff6600"; ctx.beginPath(); ctx.arc(90, yy+12, 8, 0, 7); ctx.fill(); ctx.font = `400 26px ${BFONT}`; ctx.fillStyle = "#d4d4d4"; ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText(t, 110, yy); }); }}); }
     if (g.question){ const qh = story ? 190 : 104; items.push({h: qh, gap: 0, draw:y=>qBox(ctx, g.question, 72, y, 936, qh, "#141414", 28*z)}); }
-    items[items.length-1].gap = 0; const total = items.reduce((a,b)=>a+b.h+b.gap,0), top = story ? 260 : 130, bottom = H - (story ? 170 : 110);
+    items[items.length-1].gap = 0; const total = items.reduce((a,b)=>a+b.h+b.gap,0), top = story ? 260 : 130, bottom = H - (g.logo ? (story ? 215 : 140) : (story ? 170 : 110));
     let y = top + Math.max(0, (bottom - top - total)/2); items.forEach(b=>{ b.draw(y); y += b.h + b.gap; });
+    if (g.logo){ const lh = story ? 104 : 80, ly = H - (story ? 170 : 112); drawLogo(ctx, 72, ly, lh, "dark", "left");
+      ctx.font = `400 ${Math.round(26*z)}px ${BFONT}`; ctx.fillStyle = "#a6a6a6"; ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillText(g.footer || "industrack.com", 1008, ly + lh/2); return; }
     ctx.textBaseline = "alphabetic"; ctx.textAlign = "left"; ctx.font = `800 ${Math.round(34*z)}px ${BFONT}`; ctx.fillStyle = "#fff"; ctx.fillText("IndusTrack", 72, H - (story ? 120 : 52)); const ww = ctx.measureText("IndusTrack").width;
     ctx.font = `400 ${Math.round(26*z)}px ${BFONT}`; ctx.fillStyle = "#8a8a8a"; ctx.fillText(g.footer || "industrack.com", 72 + ww + 20, H - (story ? 120 : 52));
     return;
@@ -94,17 +108,20 @@ function drawBrand(canvas, g, photo, fmt){
   if (photo){ const s = Math.max(W/photo.width, H/photo.height); ctx.drawImage(photo, (W-photo.width*s)*(g.photoFocusX??0.5), (H-photo.height*s)*(g.photoFocusY??0.4), photo.width*s, photo.height*s);
     const d = g.overlay ?? 0.6, gr = ctx.createLinearGradient(0,0,0,H); gr.addColorStop(0, `rgba(3,26,80,${Math.max(0,d-0.3)})`); gr.addColorStop(0.5, `rgba(3,26,80,${d})`); gr.addColorStop(1, `rgba(3,22,70,${Math.min(0.95,d+0.3)})`); ctx.fillStyle = gr; ctx.fillRect(0,0,W,H); }
   else texture(ctx, W, H, 0.05);
-  const y0 = story ? 105 : 60; ctx.fillStyle = "#ff6600"; ctx.fillRect(80, y0, 78, 6); ctx.fillRect(80, y0, 6, 78);
+  const y0 = story ? 105 : 60, PT = !!(g.pillTop && g.pill), topH = PT ? (story ? 120 : 92) : 0, LV = photo ? "dark" : "blue";
+  if (PT){ if (g.logo) drawLogo(ctx, 1000, y0, topH, LV, "right"); pillAt(ctx, g.pill, 80, y0 + (topH - 46*z)/2, 46*z, 22*z, "left"); }
+  else { ctx.fillStyle = "#ff6600"; ctx.fillRect(80, y0, 78, 6); ctx.fillRect(80, y0, 6, 78); }
   const quote = (x, y, sz, color)=>{ ctx.fillStyle = color; [0, 1].forEach(i=>{ const bx = x + i*sz*0.95; ctx.beginPath(); ctx.moveTo(bx + sz*0.45, y); ctx.lineTo(bx + sz*0.95, y); ctx.lineTo(bx + sz*0.5, y + sz*1.05); ctx.lineTo(bx, y + sz*1.05); ctx.closePath(); ctx.fill(); }); };
-  quote(80, y0 + (story ? 160 : 90), story ? 58 : 34, photo ? "rgba(255,255,255,0.25)" : "#0a2f86");
+  quote(80, y0 + (PT ? topH + (story ? 50 : 34) : (story ? 160 : 90)), story ? 58 : 34, photo ? "rgba(255,255,255,0.25)" : "#0a2f86");
   const footY = H - (story ? 115 : 50), rowY = H - (story ? 190 : 108);
   ctx.font = `400 ${Math.round(28*z)}px ${BFONT}`; ctx.fillStyle = "#a9bdf5"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(g.footer || "industrack.com", W/2, footY);
-  ctx.font = `800 ${Math.round(38*z)}px ${BFONT}`; ctx.fillStyle = "#fff"; ctx.textAlign = "right"; ctx.fillText("IndusTrack", 1000, rowY + 23*z);
-  if (g.pill) pillAt(ctx, g.pill, 80, rowY, 46*z, 22*z, "left");
-  let bottomEdge = rowY - 6;
+  if (g.logo && !PT) drawLogo(ctx, 1000, rowY - (story ? 20 : 14), story ? 92 : 70, LV, "right");
+  else if (!g.logo){ ctx.font = `800 ${Math.round(38*z)}px ${BFONT}`; ctx.fillStyle = "#fff"; ctx.textAlign = "right"; ctx.fillText("IndusTrack", 1000, rowY + 23*z); }
+  if (g.pill && !PT) pillAt(ctx, g.pill, 80, rowY, 46*z, 22*z, "left");
+  let bottomEdge = (PT && g.logo) ? H - (story ? 180 : 92) : rowY - (g.logo && !PT ? (story ? 30 : 22) : 6);
   if (g.question){ const qh = story ? 152 : 86; qBox(ctx, g.question, 80, bottomEdge - qh, 920, qh, photo ? "rgba(2,22,70,0.85)" : "#072a80", 26*z); bottomEdge -= qh; }
   quote(965, bottomEdge - (story ? 90 : 62), story ? 30 : 22, "#ff6600");
-  const textBottom = bottomEdge - (story ? 150 : 100), textTop = y0 + (story ? 300 : 170);
+  const textBottom = bottomEdge - (story ? 150 : 100), textTop = y0 + (PT ? topH + (story ? 200 : 110) : (story ? 300 : 170));
   let sub = null; if (g.supportLine){ ctx.font = `500 30px ${BFONT}`; sub = fitWrapped(ctx, [g.supportLine], 500, story ? 40 : 30, 20, 920, 2); }
   const subH = sub ? sub.lines.length*sub.s*1.3 + 30 : 0;
   const f = fitWrapped(ctx, g.headline || [""], 700, g.headlineMax || (story ? 132 : 86), 40, 920, story ? 8 : 5);
