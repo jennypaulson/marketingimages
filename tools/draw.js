@@ -105,6 +105,8 @@ function drawBrand(canvas, g, photo, fmt){
     return;
   }
   // "statement": blue, quote marks, big left-aligned headline
+  // photoPanel: true shows the photo as a rounded panel under the white logo strip instead of as the background (user, 2026-10-04: human connection).
+  const PANEL = !!(photo && g.photoPanel), panelImg = PANEL ? photo : null; if (PANEL) photo = null;
   ctx.fillStyle = g.bg || "#0540a5"; ctx.fillRect(0,0,W,H);
   if (photo){ const s = Math.max(W/photo.width, H/photo.height); ctx.drawImage(photo, (W-photo.width*s)*(g.photoFocusX??0.5), (H-photo.height*s)*(g.photoFocusY??0.4), photo.width*s, photo.height*s);
     const d = g.overlay ?? 0.6, gr = ctx.createLinearGradient(0,0,0,H); gr.addColorStop(0, `rgba(3,26,80,${Math.max(0,d-0.3)})`); gr.addColorStop(0.5, `rgba(3,26,80,${d})`); gr.addColorStop(1, `rgba(3,22,70,${Math.min(0.95,d+0.3)})`); ctx.fillStyle = gr; ctx.fillRect(0,0,W,H); }
@@ -116,10 +118,14 @@ function drawBrand(canvas, g, photo, fmt){
   if (STRIP){ const m = story ? 32 : 24; ctx.fillStyle = "#ffffff"; roundRect(ctx, m, m, W - 2*m, stripH - m, 18); ctx.fill();
     ctx.fillStyle = "#ff6600"; ctx.save(); roundRect(ctx, m, m, W - 2*m, stripH - m, 18); ctx.clip(); ctx.fillRect(m, stripH - 6, W - 2*m, 6); ctx.restore();
     const lh = story ? 100 : 70, cy = m + (stripH - m - 6)/2; drawLogo(ctx, 80, cy - lh/2, lh, "light", "left"); pillAt(ctx, g.pill, 1000, cy - 23*z, 46*z, 22*z, "right"); }
+  let panelBottom = 0;
+  if (panelImg){ const px = 80, py = topEnd + (story ? 44 : 30), pw = 920, ph = story ? 640 : 330; panelBottom = py + ph;
+    const s = Math.max(pw/panelImg.width, ph/panelImg.height), dw = panelImg.width*s, dh = panelImg.height*s;
+    ctx.save(); roundRect(ctx, px, py, pw, ph, 18); ctx.clip(); ctx.drawImage(panelImg, px + (pw-dw)*(g.photoFocusX??0.5), py + (ph-dh)*(g.photoFocusY??0.4), dw, dh); ctx.restore(); }
   else if (PT){ if (g.logo) drawLogo(ctx, 1000, y0, topH, LV, "right"); pillAt(ctx, g.pill, 80, y0 + (topH - 46*z)/2, 46*z, 22*z, "left"); }
   else { ctx.fillStyle = "#ff6600"; ctx.fillRect(80, y0, 78, 6); ctx.fillRect(80, y0, 6, 78); }
   const quote = (x, y, sz, color)=>{ ctx.fillStyle = color; [0, 1].forEach(i=>{ const bx = x + i*sz*0.95; ctx.beginPath(); ctx.moveTo(bx + sz*0.45, y); ctx.lineTo(bx + sz*0.95, y); ctx.lineTo(bx + sz*0.5, y + sz*1.05); ctx.lineTo(bx, y + sz*1.05); ctx.closePath(); ctx.fill(); }); };
-  quote(80, PT ? topEnd + (story ? 50 : 34) : y0 + (story ? 160 : 90), story ? 58 : 34, photo ? "rgba(255,255,255,0.25)" : "#0a2f86");
+  if (!panelImg) quote(80, PT ? topEnd + (story ? 50 : 34) : y0 + (story ? 160 : 90), story ? 58 : 34, photo ? "rgba(255,255,255,0.25)" : "#0a2f86");
   const footY = H - (story ? 115 : 50), rowY = H - (story ? 190 : 108);
   ctx.font = `400 ${Math.round(28*z)}px ${BFONT}`; ctx.fillStyle = "#a9bdf5"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(g.footer || "industrack.com", W/2, footY);
   if (g.logo && !PT) drawLogo(ctx, 1000, rowY - (story ? 20 : 14), story ? 92 : 70, LV, "right");
@@ -127,14 +133,14 @@ function drawBrand(canvas, g, photo, fmt){
   if (g.pill && !PT) pillAt(ctx, g.pill, 80, rowY, 46*z, 22*z, "left");
   let bottomEdge = (PT && g.logo) ? H - (story ? 180 : 92) : rowY - (g.logo && !PT ? (story ? 30 : 22) : 6);
   if (g.question){ const qh = story ? 152 : 86; qBox(ctx, g.question, 80, bottomEdge - qh, 920, qh, photo ? "rgba(2,22,70,0.85)" : "#072a80", 26*z); bottomEdge -= qh; }
-  quote(965, bottomEdge - (story ? 90 : 62), story ? 30 : 22, "#ff6600");
-  const textBottom = bottomEdge - (story ? 150 : 100), textTop = PT ? topEnd + (story ? 200 : 110) : y0 + (story ? 300 : 170);
+  if (!panelImg) quote(965, bottomEdge - (story ? 90 : 62), story ? 30 : 22, "#ff6600");
+  const textBottom = bottomEdge - (panelImg ? (story ? 50 : 30) : (story ? 150 : 100)), textTop = panelImg ? panelBottom + (story ? 70 : 36) : PT ? topEnd + (story ? 200 : 110) : y0 + (story ? 300 : 170);
   let sub = null; if (g.supportLine){ ctx.font = `500 30px ${BFONT}`; sub = fitWrapped(ctx, [g.supportLine], 500, story ? 40 : 30, 20, 920, 2); }
   const subH = sub ? sub.lines.length*sub.s*1.3 + 30 : 0;
   const f = fitWrapped(ctx, g.headline || [""], 700, g.headlineMax || (story ? 132 : 86), 40, 920, story ? 8 : 5);
   let lh = Math.round(f.s*1.14), blockH = lh*f.lines.length + subH;
   while (blockH > textBottom - textTop && f.s > 40){ f.s -= 2; ctx.font = `700 ${f.s}px ${BFONT}`; f.lines = (g.headline||[]).flatMap(t=>wrapWords(ctx,t,920)); lh = Math.round(f.s*1.14); blockH = lh*f.lines.length + subH; }
-  let y = story ? textTop + (textBottom - textTop - blockH)*0.62 : textBottom - blockH - Math.max(0, (textBottom - textTop - blockH)*0.25);
+  let y = panelImg ? textTop + Math.max(0, (textBottom - textTop - blockH)*0.35) : story ? textTop + (textBottom - textTop - blockH)*0.62 : textBottom - blockH - Math.max(0, (textBottom - textTop - blockH)*0.25);
   ctx.textBaseline = "top"; ctx.font = `700 ${f.s}px ${BFONT}`; f.lines.forEach((l,i)=>drawWordsLeft(ctx, l, 80, y + i*lh, "#fff", acc));
   if (sub){ y += lh*f.lines.length + 30; ctx.font = `500 ${sub.s}px ${BFONT}`; sub.lines.forEach((l,i)=>drawWordsLeft(ctx, l, 80, y + i*sub.s*1.3, "#dbe5ff", new Set())); }
 }
