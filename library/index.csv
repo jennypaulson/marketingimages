@@ -86,3 +86,4 @@ library/website/service-agreement-contractor-report.webp,website,Service Contrac
 library/website/scheduling-board-tablet.webp,website,Scheduling board (day/week/month) on stacked screens,general_commercial,none,screenshot,2000x1440,,,HubSpot website (uploaded 2026-10-01),
 library/email/industrack-logo-email.png,email,IndusTrack logo PNG for emails (640x144; show at 160x36),general_commercial,none,logo,640x144,,,rendered from website logo SVG 2026-10-04,
 library/email/phone-job-details-hvac-440.png,email,Phone job details (HVAC) for emails (show at 220px wide),hvac,none,screenshot,440x824,,,resized from library/product/phone-job-details-mockup-243.png 2026-10-04,
+library/email/hvac-service-log-checklist-preview-400.png,email,Preview of the free HVAC Service Log Checklist PDF for emails (show at 200px wide),hvac,none,document,402x576,,,rendered from website downloads/lead-magnet-hvac-service-log-checklist.pdf 2026-10-04,
