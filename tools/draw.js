@@ -105,6 +105,7 @@ function drawBrand(canvas, g, photo, fmt){
     return;
   }
   // "statement": blue, quote marks, big left-aligned headline
+  if (photo && g.layout === "hero") return drawHero(ctx, g, photo, story, W, H, z, acc);
   // photoPanel: true shows the photo as a rounded panel under the white logo strip instead of as the background (user, 2026-10-04: human connection).
   const PANEL = !!(photo && g.photoPanel), panelImg = PANEL ? photo : null; if (PANEL) photo = null;
   ctx.fillStyle = g.bg || "#0540a5"; ctx.fillRect(0,0,W,H);
@@ -143,5 +144,35 @@ function drawBrand(canvas, g, photo, fmt){
   let y = panelImg ? textTop + Math.max(0, (textBottom - textTop - blockH)*0.35) : story ? textTop + (textBottom - textTop - blockH)*0.62 : textBottom - blockH - Math.max(0, (textBottom - textTop - blockH)*0.25);
   ctx.textBaseline = "top"; ctx.font = `700 ${f.s}px ${BFONT}`; f.lines.forEach((l,i)=>drawWordsLeft(ctx, l, 80, y + i*lh, "#fff", acc));
   if (sub){ y += lh*f.lines.length + 30; ctx.font = `500 ${sub.s}px ${BFONT}`; sub.lines.forEach((l,i)=>drawWordsLeft(ctx, l, 80, y + i*sub.s*1.3, "#dbe5ff", new Set())); }
+}
+// layout "hero" (user, 2026-10-04: photo posts must stand out). Z-pattern: logo card top-left and pill top-right over a
+// full-bleed photo (top ~55%), a diagonal cut with an orange edge into IndusTrack blue, the headline bottom-left and
+// industrack.com bottom-right. Three elements only (photo, headline, brand); the comment question lives in the caption.
+function drawHero(ctx, g, photo, story, W, H, z, acc){
+  const PH = story ? 1060 : 600, cut = story ? 110 : 80;
+  ctx.fillStyle = "#0540a5"; ctx.fillRect(0, 0, W, H);
+  const s = Math.max(W/photo.width, PH/photo.height), dw = photo.width*s, dh = photo.height*s;
+  ctx.drawImage(photo, (W-dw)*(g.photoFocusX??0.5), (PH-dh)*(g.photoFocusY??0.4), dw, dh);
+  const tg = ctx.createLinearGradient(0, 0, 0, story ? 300 : 200); tg.addColorStop(0, "rgba(0,0,0,0.35)"); tg.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = tg; ctx.fillRect(0, 0, W, story ? 300 : 200);
+  // diagonal cut: blue rises toward the right, orange edge above it
+  ctx.fillStyle = "#ff6600"; ctx.beginPath(); ctx.moveTo(0, PH); ctx.lineTo(W, PH - cut); ctx.lineTo(W, PH - cut + 12); ctx.lineTo(0, PH + 12); ctx.closePath(); ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.moveTo(0, PH + 10); ctx.lineTo(W, PH - cut + 10); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fillStyle = "#0540a5"; ctx.fill(); ctx.clip(); texture(ctx, W, H, 0.05); ctx.restore();
+  // logo card (top-left) and pill (top-right)
+  const m = story ? 150 : 40, lh = story ? 92 : 70, pad = story ? 24 : 18;
+  const lw = (function(){ const c = document.createElement("canvas").getContext("2d"); return drawLogo(c, 0, 0, lh, "light", "left"); })();
+  ctx.save(); ctx.shadowColor = "rgba(0,0,0,0.25)"; ctx.shadowBlur = 18; ctx.shadowOffsetY = 4; ctx.fillStyle = "#ffffff"; roundRect(ctx, m, m, lw + pad*2, lh + pad*2, 16); ctx.fill(); ctx.restore();
+  drawLogo(ctx, m + pad, m + pad, lh, "light", "left");
+  if (g.pill) pillAt(ctx, g.pill, W - m, m + pad + lh/2 - 23*z, 46*z, 22*z, "right");
+  // text
+  const footY = H - (story ? 260 : 56), top = PH + (story ? 70 : 44), bottom = footY - (story ? 70 : 44);
+  let sub = null; if (g.supportLine){ sub = fitWrapped(ctx, [g.supportLine], 500, story ? 40 : 28, 20, 920, 2); }
+  const subH = sub ? sub.lines.length*sub.s*1.3 + (story ? 30 : 18) : 0;
+  const f = fitWrapped(ctx, g.headline || [""], 700, g.headlineMax || (story ? 118 : 72), 36, 920, story ? 6 : 3);
+  let lhh = Math.round(f.s*1.12), blockH = lhh*f.lines.length + subH;
+  while (blockH > bottom - top && f.s > 36){ f.s -= 2; ctx.font = `700 ${f.s}px ${BFONT}`; f.lines = (g.headline||[]).flatMap(t=>wrapWords(ctx,t,920)); lhh = Math.round(f.s*1.12); blockH = lhh*f.lines.length + subH; }
+  let y = top + Math.max(0, (bottom - top - blockH)/2);
+  ctx.textBaseline = "top"; ctx.font = `700 ${f.s}px ${BFONT}`; f.lines.forEach((l,i)=>drawWordsLeft(ctx, l, 80, y + i*lhh, "#fff", acc));
+  if (sub){ y += lhh*f.lines.length + (story ? 30 : 18); ctx.font = `500 ${sub.s}px ${BFONT}`; sub.lines.forEach((l,i)=>drawWordsLeft(ctx, l, 80, y + i*sub.s*1.3, "#dbe5ff", new Set())); }
+  ctx.font = `600 ${Math.round(28*z)}px ${BFONT}`; ctx.fillStyle = "#ffffff"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(g.footer || "industrack.com", 80, footY);
 }
 function drawGraphic(canvas, g, photoImg, fmt){ if (g && (g.style === "statement" || g.style === "stat")) return drawBrand(canvas, g, photoImg, fmt); return drawClassic(canvas, g, photoImg); }
